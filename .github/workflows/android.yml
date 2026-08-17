@@ -1,0 +1,73 @@
+name: Build Android AAR
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ffmpeg-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Build ffmpeg-kit-next Android AAR (openssl, all ABIs)
+        run: ./nix-android.sh -p android-r27d --enable-openssl
+
+      - name: Report artifact sizes
+        run: |
+          set -euo pipefail
+          AAR=$(find prebuilt/bundle-android-aar-*-maven -name '*.aar' | head -1)
+          [ -n "$AAR" ] || { echo "ERROR: AAR not found" >&2; exit 1; }
+          echo "::group::Artifact sizes"
+          echo "AAR: $(stat -c %s "$AAR") bytes ($(du -h "$AAR" | cut -f1))"
+          echo ""
+          TMP=$(mktemp -d)
+          unzip -q "$AAR" -d "$TMP"
+          for d in "$TMP"/jni/*/; do
+            abi=$(basename "$d")
+            echo "== $abi =="
+            (cd "$d" && ls -la . | awk 'NR>3 {printf "  %s: %d bytes\n", $9, $5}')
+            echo ""
+          done
+          echo "::endgroup::"
+          rm -rf "$TMP"
+
+      - name: Prepare JitPack maven repo
+        run: bash .github/scripts/prepare_jitpack_maven_repo.sh
+
+      - name: Commit artifacts to main
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A maven-repo
+          if git diff --cached --quiet; then
+            echo "No artifact changes to commit"
+          else
+            git commit -m "build: publish ffmpeg-kit-next Android AAR [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload AAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-kit-next-android
+          path: prebuilt/bundle-android-aar-*-maven/**/*.aar
+          if-no-files-found: error

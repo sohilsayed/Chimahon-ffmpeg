@@ -1,0 +1,2 @@
+install:
+  - bash -c 'mkdir -p ~/.m2/repository && cp -R maven-repo/* ~/.m2/repository/'

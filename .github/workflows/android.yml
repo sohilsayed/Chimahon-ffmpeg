@@ -27,7 +27,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v9
 
       - name: Build ffmpeg-kit-next Android AAR (openssl, all ABIs)
-        run: ./nix-android.sh -p android-r27d --enable-openssl
+        run: ./nix-android.sh -p android-r27d --enable-openssl --enable-libsvtav1
 
       - name: Report artifact sizes
         run: |

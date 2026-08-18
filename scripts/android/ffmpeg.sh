@@ -457,9 +457,15 @@ do
   NEW_VERSION="${REST#*:}"
   if [[ -f "${MAP_FILE}" ]]; then
     ${SED_INLINE} "s/^${OLD_VERSION} {/${NEW_VERSION} {/g" "${MAP_FILE}" 1>>"${BASEDIR}"/build.log 2>&1
-    echo -e "INFO: Retagged ${MAP_FILE}: ${OLD_VERSION} -> ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+    if grep -q "^${NEW_VERSION} {" "${MAP_FILE}"; then
+      echo -e "INFO: Retagged ${MAP_FILE}: ${OLD_VERSION} -> ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+    else
+      echo -e "ERROR: Failed to retag ${MAP_FILE}: version node ${OLD_VERSION} not rewritten to ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+      exit 1
+    fi
   else
-    echo -e "WARNING: ${MAP_FILE} not found, version tag left as ${OLD_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+    echo -e "ERROR: ${MAP_FILE} not found, cannot retag to ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+    exit 1
   fi
 done
 

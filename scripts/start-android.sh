@@ -402,6 +402,36 @@ if [[ -n ${ANDROID_ARCHITECTURES} ]]; then
 
   echo -e -n "\n"
 
+  # BUNDLE THE C++ SHARED RUNTIME SO CONSUMERS THAT LINK AGAINST c++_shared
+  # (e.g. libmpv.so) find libc++_shared.so on device. The mpv-android fork
+  # deliberately excludes it from its own AAR, relying on this one to provide it.
+  echo -e -n "\nBundling libc++_shared.so into Android archive: "
+  BUNDLED=0
+  for abi_dir in "${BASEDIR}"/android/libs/*/; do
+    abi=$(basename "${abi_dir}")
+    case "${abi}" in
+      arm64-v8a) triple="aarch64-linux-android" ;;
+      armeabi-v7a) triple="arm-linux-androideabi" ;;
+      x86) triple="i686-linux-android" ;;
+      x86_64) triple="x86_64-linux-android" ;;
+      *) continue ;;
+    esac
+    cxx_shared="${ANDROID_TOOLCHAIN}/sysroot/usr/lib/${triple}/libc++_shared.so"
+    if [[ -f "${cxx_shared}" ]]; then
+      cp -f "${cxx_shared}" "${abi_dir}/libc++_shared.so"
+      echo -e "INFO: Bundled libc++_shared.so into ${abi}" 1>>"${BASEDIR}"/build.log 2>&1
+      BUNDLED=1
+    else
+      echo -e "WARNING: libc++_shared.so not found for ${abi} at ${cxx_shared}" 1>>"${BASEDIR}"/build.log 2>&1
+    fi
+  done
+  if [[ ${BUNDLED} -eq 0 ]]; then
+    echo "failed"
+    exit 1
+  else
+    echo "ok"
+  fi
+
   # DO NOT BUILD ANDROID ARCHIVE
   if [[ ${NO_ARCHIVE} -ne 1 ]]; then
 

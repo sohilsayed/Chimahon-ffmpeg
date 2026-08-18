@@ -434,6 +434,31 @@ else
   "${BASEDIR}/scripts/android/ffmpeg-kit-protocols-test.sh" "${BASEDIR}" "${BASEDIR}/src/${LIB_NAME}" 1>>"${BASEDIR}"/build.log 2>&1 || return 1
 fi
 
+# ALIGN EXPORTED SYMBOL VERSIONS WITH THE FFMPEG 7.x LINE THAT libmpv.so
+# (aniyomi-mpv-lib 1.17.n) WAS LINKED AGAINST. libmpv.so requires
+# LIBAVUTIL_59/LIBAVCODEC_61/LIBAVFORMAT_61/LIBAVDEVICE_61/LIBAVFILTER_10/
+# LIBSWRESAMPLE_5/LIBSWSCALE_8; an 8.x build exports the same symbols under
+# LIBAVUTIL_60/.../LIBSWSCALE_9 which bionic cannot match. Renaming the
+# version nodes in each link map retags every export exactly as mpv expects
+# without recompiling ffmpeg. The API/ABI itself is untouched.
+echo -e "\nINFO: Retagging ffmpeg shared-library version nodes to the 7.x symbol line\n" 1>>"${BASEDIR}"/build.log 2>&1
+for retag in \
+  "libavutil/libavutil.map:LIBAVUTIL_60:LIBAVUTIL_59" \
+  "libavcodec/libavcodec.map:LIBAVCODEC_62:LIBAVCODEC_61" \
+  "libavformat/libavformat.map:LIBAVFORMAT_62:LIBAVFORMAT_61" \
+  "libavdevice/libavdevice.map:LIBAVDEVICE_62:LIBAVDEVICE_61" \
+  "libavfilter/libavfilter.map:LIBAVFILTER_11:LIBAVFILTER_10" \
+  "libswresample/libswresample.map:LIBSWRESAMPLE_6:LIBSWRESAMPLE_5" \
+  "libswscale/libswscale.map:LIBSWSCALE_9:LIBSWSCALE_8": do
+  IFS=: read -r MAP_FILE OLD_VERSION NEW_VERSION <<<"${retag}"
+  if [[ -f "${MAP_FILE}" ]]; then
+    ${SED_INLINE} "s/^${OLD_VERSION} {/${NEW_VERSION} {/g" "${MAP_FILE}" 1>>"${BASEDIR}"/build.log 2>&1
+    echo -e "INFO: Retagged ${MAP_FILE}: ${OLD_VERSION} -> ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+  else
+    echo -e "WARNING: ${MAP_FILE} not found, version tag left as ${OLD_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1
+  fi
+done
+
 ###################################################################
 
 ./configure \

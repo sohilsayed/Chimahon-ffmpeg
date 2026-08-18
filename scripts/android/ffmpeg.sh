@@ -449,8 +449,12 @@ for retag in \
   "libavdevice/libavdevice.map:LIBAVDEVICE_62:LIBAVDEVICE_61" \
   "libavfilter/libavfilter.map:LIBAVFILTER_11:LIBAVFILTER_10" \
   "libswresample/libswresample.map:LIBSWRESAMPLE_6:LIBSWRESAMPLE_5" \
-  "libswscale/libswscale.map:LIBSWSCALE_9:LIBSWSCALE_8": do
-  IFS=: read -r MAP_FILE OLD_VERSION NEW_VERSION <<<"${retag}"
+  "libswscale/libswscale.map:LIBSWSCALE_9:LIBSWSCALE_8"
+do
+  MAP_FILE="${retag%%:*}"
+  REST="${retag#*:}"
+  OLD_VERSION="${REST%%:*}"
+  NEW_VERSION="${REST#*:}"
   if [[ -f "${MAP_FILE}" ]]; then
     ${SED_INLINE} "s/^${OLD_VERSION} {/${NEW_VERSION} {/g" "${MAP_FILE}" 1>>"${BASEDIR}"/build.log 2>&1
     echo -e "INFO: Retagged ${MAP_FILE}: ${OLD_VERSION} -> ${NEW_VERSION}\n" 1>>"${BASEDIR}"/build.log 2>&1

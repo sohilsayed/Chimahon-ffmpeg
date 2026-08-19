@@ -26,6 +26,23 @@ jobs:
       - name: Build ffmpeg-kit-next Android AAR (openssl, all ABIs)
         run: ./nix-android.sh -p android-r27d --enable-openssl --enable-libsvtav1
 
+      - name: Surface build.log on failure
+        if: failure()
+        run: |
+          set -euo pipefail
+          if [ ! -f build.log ]; then
+            echo "no build.log produced"
+            exit 0
+          fi
+          python3 - build.log <<'EOF'
+          import sys
+          data = open(sys.argv[1], errors="replace").read()
+          tail = data[-6000:]
+          print("::error title=build.log tail::" + tail.replace("%", "%25").replace("\r", "").replace("\n", "%0A"))
+          EOF
+          echo "----- raw tail -----"
+          tail -n 60 build.log
+
       - name: Report artifact sizes
         run: |
           set -euo pipefail

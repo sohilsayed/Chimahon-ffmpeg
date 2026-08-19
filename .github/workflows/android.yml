@@ -52,7 +52,7 @@ jobs:
         run: bash .github/scripts/prepare_jitpack_maven_repo.sh
 
       - name: Commit artifacts to main
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -62,7 +62,7 @@ jobs:
             echo "No artifact changes to commit"
           else
             git commit -m "build: publish ffmpeg-kit-next Android AAR [skip ci]"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git push origin "HEAD:main"
           fi
 
       - name: Upload AAR artifact

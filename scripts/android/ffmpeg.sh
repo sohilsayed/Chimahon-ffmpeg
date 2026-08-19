@@ -363,6 +363,10 @@ if [ "$GPL_ENABLED" == "yes" ]; then
   CONFIGURE_POSTFIX+=" --enable-gpl"
 fi
 
+# ALWAYS ENABLE THE MOV/HEIF/AVIF MUXERS (MOVENC) USED FOR ANKI ANIMATED SCENE CAPTURE
+CONFIGURE_POSTFIX+=" --enable-muxer=mov --enable-muxer=heif --enable-muxer=avif"
+CONFIGURE_POSTFIX+=" --enable-demuxer=mov --enable-demuxer=heif --enable-demuxer=avif --enable-parser=av1"
+
 export LDFLAGS+=" -L${ANDROID_NDK_ROOT}/platforms/android-${API}/arch-$(get_toolchain_arch)/usr/lib"
 
 # ALWAYS BUILD SHARED LIBRARIES

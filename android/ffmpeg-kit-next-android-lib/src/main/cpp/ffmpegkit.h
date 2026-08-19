@@ -28,7 +28,7 @@
 #include "libavutil/log.h"
 
 /** Library version string */
-#define FFMPEG_KIT_VERSION "8.1.1.3"
+#define FFMPEG_KIT_VERSION "8.1.1.4"
 
 /** Defines tag used for Android logging. */
 #define LIB_NAME "ffmpeg-kit-next"
